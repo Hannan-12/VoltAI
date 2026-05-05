@@ -35,128 +35,155 @@ body {
   background-size: 32px 32px, 100% 100%, 100% 100%;
 }
 
-/* ─── Top Nav ─────────────────────────────────────────────── */
-.app-nav {
-  position: sticky;
+/* ─── App shell ───────────────────────────────────────────── */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────── */
+.sidebar {
+  position: fixed;
   top: 0;
-  z-index: 50;
-  background: rgba(11,15,26,0.92);
+  left: 0;
+  height: 100vh;
+  width: 220px;
+  background: rgba(11,15,26,0.97);
+  border-right: 1px solid var(--border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
 }
 
-.app-nav-inner {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  height: 60px;
-}
+.sidebar-collapsed .sidebar { width: 64px; }
 
 /* Brand */
-.app-nav-brand {
+.sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem 1rem;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  text-decoration: none;
+  min-height: 72px;
 }
 
-.app-nav-logo {
-  width: 34px;
-  height: 34px;
+.sidebar-logo {
+  width: 36px;
+  height: 36px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border-radius: 9px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  font-size: 1.05rem;
   box-shadow: 0 4px 14px rgba(245,158,11,0.3);
   flex-shrink: 0;
 }
 
-.app-nav-brand-text {
+.sidebar-brand-text {
   display: flex;
   flex-direction: column;
   line-height: 1;
-}
-
-.app-nav-brand-name {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  letter-spacing: 0.03em;
-}
-
-.app-nav-brand-sub {
-  font-size: 0.62rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-top: 1px;
-}
-
-/* Tabs */
-.app-nav-tabs {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  flex: 1;
-}
-
-.app-nav-tab {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-family: inherit;
-  font-weight: 600;
-  padding: 0 0.85rem;
-  height: 60px;
-  cursor: pointer;
-  transition: color 0.2s;
+  overflow: hidden;
   white-space: nowrap;
 }
 
-.app-nav-tab:hover { color: var(--text-secondary); }
-
-.app-nav-tab.active { color: var(--accent); }
-
-.tab-icon { font-size: 0.9rem; }
-.tab-label { }
-
-.tab-indicator {
-  position: absolute;
-  bottom: 0;
-  left: 0.85rem;
-  right: 0.85rem;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  border-radius: 2px 2px 0 0;
+.sidebar-brand-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
 }
 
-/* Status pill */
-.app-nav-status {
-  margin-left: auto;
+.sidebar-brand-sub {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* Nav items */
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 1rem 0.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-family: inherit;
+  font-weight: 600;
+  padding: 0.7rem 0.85rem;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  white-space: nowrap;
+  text-align: left;
+  width: 100%;
+}
+
+.sidebar-item:hover {
+  background: rgba(245,158,11,0.07);
+  color: var(--text-secondary);
+}
+
+.sidebar-item.active {
+  background: rgba(245,158,11,0.12);
+  color: var(--accent);
+}
+
+.sidebar-active-bar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  border-radius: 0 3px 3px 0;
+}
+
+.sidebar-item-icon { font-size: 1.05rem; flex-shrink: 0; }
+.sidebar-item-label { overflow: hidden; }
+
+/* Footer */
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.85rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.sidebar-status {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.72rem;
   font-weight: 700;
   color: #22c55e;
-  background: rgba(34,197,94,0.1);
-  border: 1px solid rgba(34,197,94,0.2);
-  border-radius: 999px;
-  padding: 0.25rem 0.7rem;
-  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .nav-status-dot {
@@ -164,7 +191,60 @@ body {
   height: 6px;
   border-radius: 50%;
   background: #22c55e;
+  flex-shrink: 0;
   animation: pulse 1.6s ease-in-out infinite;
+}
+
+.sidebar-collapse-btn {
+  background: rgba(245,158,11,0.07);
+  border: 1px solid rgba(245,158,11,0.15);
+  border-radius: 7px;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+
+.sidebar-collapse-btn:hover {
+  background: rgba(245,158,11,0.15);
+  color: var(--accent);
+}
+
+/* Collapsed: centre icons */
+.sidebar-collapsed .sidebar-item {
+  justify-content: center;
+  padding: 0.7rem 0;
+}
+
+.sidebar-collapsed .sidebar-footer {
+  justify-content: center;
+}
+
+/* ─── Main content area ───────────────────────────────────── */
+.app-main {
+  margin-left: 220px;
+  min-height: 100vh;
+  transition: margin-left 0.25s cubic-bezier(0.4,0,0.2,1);
+  width: calc(100% - 220px);
+}
+
+.sidebar-collapsed .app-main {
+  margin-left: 64px;
+  width: calc(100% - 64px);
+}
+
+/* ─── Mobile: hide sidebar, stack vertically ──────────────── */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .app-main { margin-left: 0; width: 100%; }
+  .sidebar-collapsed .app-main { margin-left: 0; width: 100%; }
 }
 
 /* ─── Scrollbar ───────────────────────────────────────────── */

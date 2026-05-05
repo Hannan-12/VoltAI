@@ -8,16 +8,17 @@ import Forecast from './components/Forecast'
 import './App.css'
 
 const TABS = [
-  { id: 'dashboard', icon: '⚡', label: 'Classify'      },
-  { id: 'loads',     icon: '🔌', label: 'Load Manager'  },
-  { id: 'schedule',  icon: '🗓️', label: 'Scheduler'     },
-  { id: 'alerts',    icon: '🔔', label: 'Alerts'         },
-  { id: 'forecast',  icon: '📈', label: 'Forecast'       },
+  { id: 'dashboard', icon: '⚡', label: 'Classify'     },
+  { id: 'loads',     icon: '🔌', label: 'Load Manager' },
+  { id: 'schedule',  icon: '🗓️', label: 'Scheduler'    },
+  { id: 'alerts',    icon: '🔔', label: 'Alerts'        },
+  { id: 'forecast',  icon: '📈', label: 'Forecast'      },
 ]
 
 export default function App() {
-  const [status, setStatus]   = useState('checking')
+  const [status, setStatus]     = useState('checking')
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
     api.health()
@@ -54,48 +55,62 @@ export default function App() {
   }
 
   return (
-    <>
-      <nav className="app-nav">
-        <div className="app-nav-inner">
-          {/* Brand */}
-          <div className="app-nav-brand">
-            <div className="app-nav-logo">⚡</div>
-            <div className="app-nav-brand-text">
-              <span className="app-nav-brand-name">VoltaAI</span>
-              <span className="app-nav-brand-sub">Energy Intelligence</span>
+    <div className={`app-layout ${collapsed ? 'sidebar-collapsed' : ''}`}>
+      {/* ── Sidebar ── */}
+      <aside className="sidebar">
+        {/* Brand */}
+        <div className="sidebar-brand">
+          <div className="sidebar-logo">⚡</div>
+          {!collapsed && (
+            <div className="sidebar-brand-text">
+              <span className="sidebar-brand-name">VoltaAI</span>
+              <span className="sidebar-brand-sub">Energy Intelligence</span>
             </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="app-nav-tabs">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                className={`app-nav-tab ${activeTab === tab.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                <span className="tab-icon">{tab.icon}</span>
-                <span className="tab-label">{tab.label}</span>
-                {activeTab === tab.id && <span className="tab-indicator" />}
-              </button>
-            ))}
-          </div>
-
-          {/* Status pill */}
-          <div className="app-nav-status">
-            <span className="nav-status-dot" />
-            Live
-          </div>
+          )}
         </div>
-      </nav>
 
-      <main>
+        {/* Nav items */}
+        <nav className="sidebar-nav">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              className={`sidebar-item ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+              title={collapsed ? tab.label : undefined}
+            >
+              {activeTab === tab.id && <span className="sidebar-active-bar" />}
+              <span className="sidebar-item-icon">{tab.icon}</span>
+              {!collapsed && <span className="sidebar-item-label">{tab.label}</span>}
+            </button>
+          ))}
+        </nav>
+
+        {/* Bottom: live pill + collapse toggle */}
+        <div className="sidebar-footer">
+          {!collapsed && (
+            <div className="sidebar-status">
+              <span className="nav-status-dot" />
+              <span>Live</span>
+            </div>
+          )}
+          <button
+            className="sidebar-collapse-btn"
+            onClick={() => setCollapsed(c => !c)}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? '›' : '‹'}
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main content ── */}
+      <main className="app-main">
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'loads'     && <LoadManager />}
         {activeTab === 'schedule'  && <Scheduler />}
         {activeTab === 'alerts'    && <Alerts />}
         {activeTab === 'forecast'  && <Forecast />}
       </main>
-    </>
+    </div>
   )
 }

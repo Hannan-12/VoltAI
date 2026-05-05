@@ -1,0 +1,152 @@
+/* ─── Page ────────────────────────────────────────────────── */
+.alerts-page { max-width: 1240px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+.alerts-header {
+  position: relative;
+  text-align: center;
+  padding: 3rem 1rem 2.5rem;
+  margin-bottom: 2.5rem;
+  overflow: hidden;
+}
+
+.alerts-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(245,158,11,0.07) 0%, rgba(244,63,94,0.05) 100%);
+  border: 1px solid rgba(245,158,11,0.15);
+  border-radius: 24px;
+  backdrop-filter: blur(4px);
+}
+
+.alerts-body { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.alerts-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* ─── Threshold Form ──────────────────────────────────────── */
+.alerts-hint { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.6; }
+
+.threshold-input-row { display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; }
+
+.threshold-input-wrap {
+  display: flex;
+  align-items: center;
+  background: rgba(13,17,23,0.8);
+  border: 1px solid rgba(245,158,11,0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.threshold-input-wrap:focus-within {
+  border-color: rgba(245,158,11,0.45);
+  box-shadow: 0 0 0 3px rgba(245,158,11,0.08);
+}
+
+.threshold-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 0.65rem 1rem;
+  width: 120px;
+}
+
+.threshold-input::placeholder { color: var(--text-muted); }
+
+.threshold-unit {
+  padding: 0 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-left: 1px solid rgba(245,158,11,0.08);
+  background: rgba(245,158,11,0.04);
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+/* ─── Usage Numbers ───────────────────────────────────────── */
+.usage-numbers {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.usage-num { display: flex; flex-direction: column; gap: 0.2rem; }
+
+.usage-val {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.usage-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.usage-divider { font-size: 1.5rem; color: var(--text-muted); font-weight: 300; }
+
+/* ─── Gauge ───────────────────────────────────────────────── */
+.gauge-wrap { margin-top: 0.5rem; }
+
+.gauge-track {
+  position: relative;
+  height: 14px;
+  background: rgba(13,17,23,0.8);
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid rgba(245,158,11,0.08);
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.7s cubic-bezier(0.16,1,0.3,1), background 0.4s;
+  min-width: 4px;
+}
+
+.gauge-threshold-line {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255,255,255,0.12);
+}
+
+.gauge-labels { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
+.gauge-label-left, .gauge-label-right { font-size: 0.68rem; color: var(--text-muted); }
+.gauge-label-pct { font-size: 0.85rem; font-weight: 800; }
+
+/* ─── Alert Cards ─────────────────────────────────────────── */
+.alerts-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.alert-card { border: 1px solid; border-radius: 14px; padding: 1rem 1.2rem; }
+
+.alert-card-top { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+.alert-icon { font-size: 1rem; }
+.alert-title { font-size: 0.92rem; font-weight: 800; }
+.alert-msg { font-size: 0.84rem; color: var(--text-secondary); line-height: 1.6; padding-left: 1.6rem; }

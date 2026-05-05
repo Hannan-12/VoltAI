@@ -1,0 +1,213 @@
+{
+  "accuracy": 0.9971177944862155,
+  "precision": 0.9971337480251492,
+  "recall": 0.9971177944862155,
+  "f1_score": 0.9971207463348989,
+  "roc_auc": 0.9999946104641412,
+  "confusion_matrix": [
+    [
+      1451,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      18082,
+      8,
+      14,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      15,
+      16739,
+      0,
+      23,
+      0,
+      3,
+      1,
+      0
+    ],
+    [
+      0,
+      8,
+      0,
+      5608,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      91,
+      0,
+      26110,
+      0,
+      0,
+      35,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      387,
+      5,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      0,
+      2,
+      0,
+      0,
+      1699,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1536
+    ]
+  ],
+  "class_labels": [
+    "Iron",
+    "LED_Bulbs",
+    "Mixed_Load",
+    "Mobile_Charger",
+    "Refrigerator_ACTIVE",
+    "Refrigerator_IDLE",
+    "WashingMachine_SPIN",
+    "WashingMachine_WASH",
+    "Water_Pump"
+  ],
+  "per_class_metrics": {
+    "Iron": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 1451.0
+    },
+    "LED_Bulbs": {
+      "precision": 0.9987296326981496,
+      "recall": 0.9987847989394609,
+      "f1_score": 0.99875721505703,
+      "support": 18104.0
+    },
+    "Mixed_Load": {
+      "precision": 0.9940023752969122,
+      "recall": 0.997497169417794,
+      "f1_score": 0.9957467059278428,
+      "support": 16781.0
+    },
+    "Mobile_Charger": {
+      "precision": 0.9975097829953753,
+      "recall": 0.9985754985754985,
+      "f1_score": 0.998042356291155,
+      "support": 5616.0
+    },
+    "Refrigerator_ACTIVE": {
+      "precision": 0.9990434283527836,
+      "recall": 0.9951974386339381,
+      "f1_score": 0.9971167249050047,
+      "support": 26236.0
+    },
+    "Refrigerator_IDLE": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 1.0
+    },
+    "WashingMachine_SPIN": {
+      "precision": 0.9923076923076923,
+      "recall": 0.9847328244274809,
+      "f1_score": 0.9885057471264368,
+      "support": 393.0
+    },
+    "WashingMachine_WASH": {
+      "precision": 0.9764367816091954,
+      "recall": 0.9982373678025852,
+      "f1_score": 0.9872167344567112,
+      "support": 1702.0
+    },
+    "Water_Pump": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 1536.0
+    }
+  },
+  "feature_importance": [
+    {
+      "feature": "Current",
+      "importance": 0.38297316431999207
+    },
+    {
+      "feature": "Power",
+      "importance": 0.2233797162771225
+    },
+    {
+      "feature": "reactive_power",
+      "importance": 0.13482880592346191
+    },
+    {
+      "feature": "Power Factor",
+      "importance": 0.09544894099235535
+    },
+    {
+      "feature": "apparent_power",
+      "importance": 0.07824243605136871
+    },
+    {
+      "feature": "power_factor_deviation",
+      "importance": 0.06906159967184067
+    },
+    {
+      "feature": "Energy",
+      "importance": 0.011642839759588242
+    },
+    {
+      "feature": "Voltage",
+      "importance": 0.0023418942000716925
+    },
+    {
+      "feature": "Frequency",
+      "importance": 0.0020805802196264267
+    }
+  ]
+}

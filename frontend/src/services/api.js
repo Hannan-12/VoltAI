@@ -17,6 +17,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ features }),
     }),
+  predictBatch: (rows) =>
+    request('/predict/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows }),
+    }),
 
   // Load Manager
   getLoads: () => request('/loads'),

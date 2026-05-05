@@ -1,0 +1,15 @@
+services:
+  # ── React Frontend (Static Site) ───────────────────────────
+  - type: web
+    name: voltaai-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://<your-hf-username>-voltaai-backend.hf.space/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

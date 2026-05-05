@@ -12,7 +12,9 @@ from evaluator import evaluate
 from forecaster import forecast as run_forecast
 
 app = Flask(__name__)
-CORS(app)
+
+_origins = os.environ.get('ALLOWED_ORIGINS', '*')
+CORS(app, origins=_origins)
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), 'results')
 DB_PATH = os.path.join(os.path.dirname(__file__), 'loads.db')
@@ -148,6 +150,52 @@ def predict():
             'confidence': confidence,
             'probabilities': all_probs,
         })
+    except (KeyError, ValueError) as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# ─── Batch Predict ────────────────────────────────────────────
+
+@app.route('/api/predict/batch', methods=['POST'])
+def predict_batch():
+    try:
+        le, scaler, feature_cols = _load_artifacts()
+        model = load_model()
+    except FileNotFoundError as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 404
+
+    body = request.get_json(silent=True)
+    if not body or 'rows' not in body or not isinstance(body['rows'], list):
+        return jsonify({'status': 'error', 'message': 'Provide a JSON body with "rows" as a list of feature dicts'}), 400
+
+    try:
+        X = []
+        for row in body['rows']:
+            if isinstance(row, dict):
+                values = [row[f] for f in feature_cols]
+            elif isinstance(row, list):
+                if len(row) != len(feature_cols):
+                    raise ValueError(f'Expected {len(feature_cols)} values, got {len(row)}')
+                values = row
+            else:
+                raise ValueError('Each row must be a dict or list')
+            X.append(values)
+
+        X_scaled = scaler.transform(X)
+        pred_idxs = model.predict(X_scaled)
+        probas = model.predict_proba(X_scaled)
+
+        results = []
+        for pred_idx, proba in zip(pred_idxs, probas):
+            label = le.inverse_transform([pred_idx])[0]
+            results.append({
+                'predicted_label': label,
+                'confidence': float(proba[pred_idx]),
+                'probabilities': {cls: float(p) for cls, p in zip(le.classes_, proba)},
+            })
+
+        return jsonify({'status': 'success', 'results': results})
     except (KeyError, ValueError) as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
     except Exception as e:

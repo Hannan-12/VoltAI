@@ -5,14 +5,16 @@ import LoadManager from './components/LoadManager'
 import Scheduler from './components/Scheduler'
 import Alerts from './components/Alerts'
 import Forecast from './components/Forecast'
+import MonthlyReport from './components/MonthlyReport'
 import './App.css'
 
 const TABS = [
-  { id: 'dashboard', icon: '⚡', label: 'Classify'     },
-  { id: 'loads',     icon: '🔌', label: 'Load Manager' },
-  { id: 'schedule',  icon: '🗓️', label: 'Scheduler'    },
-  { id: 'alerts',    icon: '🔔', label: 'Alerts'        },
-  { id: 'forecast',  icon: '📈', label: 'Forecast'      },
+  { id: 'dashboard', icon: '⚡', label: 'Classify'        },
+  { id: 'loads',     icon: '🔌', label: 'Load Manager'    },
+  { id: 'monthly',   icon: '📅', label: 'Monthly Report'  },
+  { id: 'alerts',    icon: '🔔', label: 'Alerts'          },
+  { id: 'schedule',  icon: '🗓️', label: 'Scheduler'       },
+  { id: 'forecast',  icon: '📈', label: 'Forecast'        },
 ]
 
 export default function App() {
@@ -107,8 +109,9 @@ export default function App() {
       <main className="app-main">
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'loads'     && <LoadManager />}
-        {activeTab === 'schedule'  && <Scheduler />}
+        {activeTab === 'monthly'   && <MonthlyReport />}
         {activeTab === 'alerts'    && <Alerts />}
+        {activeTab === 'schedule'  && <Scheduler />}
         {activeTab === 'forecast'  && <Forecast />}
       </main>
     </div>

@@ -7,52 +7,48 @@ async function request(path, options = {}) {
   return data
 }
 
-export const api = {
-  health: () => request('/health'),
-  train: () => request('/train', { method: 'POST' }),
-  evaluate: () => request('/evaluate'),
-  predict: (features) =>
-    request('/predict', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ features }),
-    }),
-  predictBatch: (rows) =>
-    request('/predict/batch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rows }),
-    }),
-
-  // Load Manager
-  getLoads: () => request('/loads'),
-  addLoad: (load) =>
-    request('/loads', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(load),
-    }),
-  updateLoad: (id, load) =>
-    request(`/loads/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(load),
-    }),
-  deleteLoad: (id) => request(`/loads/${id}`, { method: 'DELETE' }),
-  getContribution: () => request('/loads/contribution'),
-
-  // Scheduler
-  getSchedule: () => request('/schedule'),
-
-  // Alerts
-  getThreshold:  () => request('/alerts/threshold'),
-  setThreshold:  (kwh) => request('/alerts/threshold', {
+function post(path, body) {
+  return request(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ threshold_kwh: kwh }),
-  }),
+    body: JSON.stringify(body),
+  })
+}
+
+export const api = {
+  health:   () => request('/health'),
+  evaluate: () => request('/evaluate'),
+  appliances: () => request('/appliances'),
+
+  // Core prediction endpoints
+  predictBoth:      (reading) => post('/predict/both', reading),
+  predictAppliance: (reading) => post('/predict/appliance', reading),
+  predictPower:     (reading) => post('/predict/power', reading),
+
+  // Legacy / batch
+  predict:      (features) => post('/predict', { features }),
+  predictBatch: (rows)     => post('/predict/batch', { rows }),
+
+  // Recommendation engine
+  recommend: (budgetWatts, loads) => {
+    const loadsParam = loads.map(l => `${l.appliance}:${l.power_w}`).join(',')
+    return request(`/recommend?budget_watts=${budgetWatts}&loads=${encodeURIComponent(loadsParam)}`)
+  },
+
+  // Load Manager
+  getLoads:       () => request('/loads'),
+  addLoad:        (load) => post('/loads', load),
+  updateLoad:     (id, load) => request(`/loads/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(load) }),
+  deleteLoad:     (id) => request(`/loads/${id}`, { method: 'DELETE' }),
+  getContribution: () => request('/loads/contribution'),
+
+  // Scheduler / Forecast / Alerts (legacy)
+  getSchedule:    () => request('/schedule'),
+  getForecast:    () => request('/forecast'),
+  getThreshold:   () => request('/alerts/threshold'),
+  setThreshold:   (kwh) => post('/alerts/threshold', { threshold_kwh: kwh }),
   getAlertStatus: () => request('/alerts/status'),
 
-  // Forecasting
-  getForecast: () => request('/forecast'),
+  // Training
+  train: () => post('/train', {}),
 }

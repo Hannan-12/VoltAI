@@ -306,6 +306,23 @@ export default function LoadManager() {
     toast(`${name} removed`, 'error')
   }
 
+  // Budget recommendation state
+  const [budget, setBudget]           = useState(600)
+  const [budgetInput, setBudgetInput] = useState('600')
+  const [recs, setRecs]               = useState(null)
+  const [recsLoading, setRecsLoading] = useState(false)
+
+  async function fetchRecs() {
+    if (!loads.length) return
+    setRecsLoading(true)
+    try {
+      const active = loads.map(l => ({ appliance: l.name, power_w: l.power_watts }))
+      const res = await api.recommend(budget, active)
+      setRecs(res)
+    } catch { /* ignore */ }
+    finally { setRecsLoading(false) }
+  }
+
   const contribMap = {}
   if (contribution) contribution.loads.forEach(l => { contribMap[l.id] = l })
 
@@ -347,6 +364,113 @@ export default function LoadManager() {
       </header>
 
       <div className="lm-body">
+
+        {/* ── Budget & Recommendations ── */}
+        {loads.length > 0 && contribution && (
+          <div className="glass-card">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: '1rem' }}>
+              <div className="section-title" style={{ margin: 0 }}>⚖️ Load Budget & Recommendations</div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Budget:</span>
+                <input
+                  type="number"
+                  value={budgetInput}
+                  onChange={e => setBudgetInput(e.target.value)}
+                  onBlur={() => setBudget(Math.max(1, parseFloat(budgetInput) || 600))}
+                  style={{
+                    width: 80, padding: '4px 8px', borderRadius: 8,
+                    background: 'var(--surface-4)', border: '1px solid var(--border)',
+                    color: 'var(--text-primary)', fontSize: '0.85rem',
+                  }}
+                />
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>W</span>
+                <button
+                  onClick={fetchRecs}
+                  disabled={recsLoading}
+                  style={{
+                    padding: '5px 14px', borderRadius: 999, border: 'none', cursor: 'pointer',
+                    background: 'linear-gradient(135deg,#f59e0b,#f43f5e)',
+                    color: '#fff', fontWeight: 700, fontSize: '0.78rem',
+                    opacity: recsLoading ? 0.6 : 1,
+                  }}
+                >
+                  {recsLoading ? '…' : 'Analyze'}
+                </button>
+              </div>
+            </div>
+
+            {/* Total load bar */}
+            {(() => {
+              const totalW = contribution.total_kwh_day * 1000 / 24  // rough active W
+              const regW   = loads.reduce((s, l) => s + l.power_watts, 0)
+              const pct    = Math.min((regW / budget) * 100, 100)
+              const over   = regW > budget
+              return (
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                    <span>Registered appliance total</span>
+                    <span style={{ color: over ? '#f43f5e' : '#22c55e', fontWeight: 700 }}>
+                      {regW.toFixed(0)} W / {budget} W {over ? `(+${(regW - budget).toFixed(0)} W over)` : '✓'}
+                    </span>
+                  </div>
+                  <div style={{ height: 10, background: 'var(--surface-4)', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%', width: `${pct}%`,
+                      background: over ? 'linear-gradient(90deg,#f59e0b,#f43f5e)' : 'linear-gradient(90deg,#22c55e,#14b8a6)',
+                      borderRadius: 8, transition: 'width 0.5s ease',
+                    }} />
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Recommendations */}
+            {recs && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-secondary)', marginBottom: 8 }}>ACTIVE LOADS</div>
+                  {loads.sort((a, b) => b.power_watts - a.power_watts).map(l => {
+                    const pct = (l.power_watts / Math.max(loads.reduce((s, x) => s + x.power_watts, 0), 1)) * 100
+                    const col = l.power_watts >= 1000 ? '#f43f5e' : l.power_watts >= 300 ? '#f59e0b' : '#22c55e'
+                    return (
+                      <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: col, flexShrink: 0 }} />
+                        <span style={{ flex: 1, fontSize: '0.82rem', color: 'var(--text-primary)' }}>{l.name}</span>
+                        <div style={{ width: 80, height: 5, background: 'var(--surface-4)', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct}%`, background: col, borderRadius: 4 }} />
+                        </div>
+                        <span style={{ width: 50, textAlign: 'right', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{l.power_watts} W</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-secondary)', marginBottom: 8 }}>RECOMMENDATIONS</div>
+                  {recs.recommendations.length === 0 ? (
+                    <div style={{ color: '#22c55e', fontSize: '0.85rem', fontWeight: 600 }}>✓ Within budget — no action needed</div>
+                  ) : (
+                    recs.recommendations.map((r, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <span style={{
+                          padding: '2px 8px', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700,
+                          background: r.action === 'TURN OFF' ? 'rgba(244,63,94,0.15)' : 'rgba(245,158,11,0.15)',
+                          color: r.action === 'TURN OFF' ? '#f43f5e' : '#f59e0b',
+                        }}>{r.action}</span>
+                        <span style={{ flex: 1, fontSize: '0.82rem', color: 'var(--text-primary)' }}>{r.appliance}</span>
+                        <span style={{ fontSize: '0.78rem', color: '#22c55e' }}>−{r.saves_w} W</span>
+                      </div>
+                    ))
+                  )}
+                  {recs.recommendations.length > 0 && (
+                    <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 8, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', fontSize: '0.8rem', color: '#22c55e' }}>
+                      After actions: {recs.total_after_w.toFixed(0)} W · Savings: {recs.savings_pct}%
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Yesterday's Usage ── */}
         <div className="glass-card">

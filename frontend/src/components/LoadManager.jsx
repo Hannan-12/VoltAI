@@ -183,7 +183,7 @@ function LoadForm({ initial, onSave, onCancel }) {
       <div className="load-form-grid">
         <div className="lf-field">
           <label className="lf-label">Appliance Name</label>
-          <input className="lf-input" placeholder="e.g. Air Conditioner" value={form.name} onChange={e => set('name', e.target.value)} />
+          <input className="lf-input" placeholder="e.g. Ceiling Fan" value={form.name} onChange={e => set('name', e.target.value)} />
         </div>
         <div className="lf-field">
           <label className="lf-label">Power Rating</label>

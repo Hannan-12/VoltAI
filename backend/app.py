@@ -1,6 +1,8 @@
 import os
 import json
+import time
 import sqlite3
+import datetime
 import numpy as np
 import joblib
 from flask import Flask, jsonify, request, g
@@ -15,6 +17,8 @@ app = Flask(__name__)
 
 _origins = os.environ.get('ALLOWED_ORIGINS', '*')
 CORS(app, origins=_origins)
+
+_APP_START = time.time()
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), 'results')
 DB_PATH = os.path.join(os.path.dirname(__file__), 'loads.db')
@@ -58,18 +62,106 @@ init_db()
 
 # ─── ML helpers ───────────────────────────────────────────────
 
-def _load_artifacts():
-    le = joblib.load(os.path.join(MODELS_DIR, 'label_encoder.pkl'))
-    scaler = joblib.load(os.path.join(MODELS_DIR, 'scaler.pkl'))
-    feature_cols = joblib.load(os.path.join(MODELS_DIR, 'feature_cols.pkl'))
-    return le, scaler, feature_cols
+LABEL_MAP = [
+    'Ceiling_Fan', 'Iron', 'LED_Bulbs', 'Microwave_Oven', 'Mixed_Load',
+    'Phone_Charger', 'Refrigerator_ACTIVE', 'Refrigerator_IDLE',
+    'Standby_Load', 'Unknown_Load', 'WashingMachine_SPIN',
+    'WashingMachine_WASH', 'Water_Pump',
+]
 
-# ─── Health ───────────────────────────────────────────────────
+CLF_FEATURES = ['Voltage', 'Current', 'Power', 'Frequency', 'Power Factor',
+                 'Apparent_Power', 'Reactive_Power', 'Hour', 'IsWeekend']
+
+REG_FEATURES = ['Voltage', 'Current', 'Frequency', 'Power Factor',
+                 'Apparent_Power', 'Reactive_Power', 'Hour', 'IsWeekend']
+
+# Load all 4 models once at startup
+try:
+    _CLF    = joblib.load(os.path.join(MODELS_DIR, 'best_appliance_classifier.joblib'))
+    _CLF_SC = joblib.load(os.path.join(MODELS_DIR, 'feature_scaler.joblib'))
+    _REG    = joblib.load(os.path.join(MODELS_DIR, 'best_power_regressor.joblib'))
+    _REG_SC = joblib.load(os.path.join(MODELS_DIR, 'regression_feature_scaler.joblib'))
+    _MODELS_READY = True
+except Exception as _e:
+    _CLF = _CLF_SC = _REG = _REG_SC = None
+    _MODELS_READY = False
+
+
+def _build_features(raw: dict):
+    """Compute derived features from a raw PZEM reading dict."""
+    voltage = float(raw.get('Voltage') or raw.get('voltage') or 0)
+    current = float(raw.get('Current') or raw.get('current') or 0)
+    power   = float(raw.get('Power')   or raw.get('power')   or 0)
+    freq    = float(raw.get('Frequency') or raw.get('frequency') or 0)
+    pf      = float(raw.get('Power Factor') or raw.get('power_factor') or 0)
+    apparent = voltage * current
+    reactive = float(np.sqrt(max(apparent ** 2 - power ** 2, 0)))
+
+    # Hour / IsWeekend from Time or timestamp field
+    hour = 0
+    is_weekend = 0
+    ts = raw.get('Time') or raw.get('timestamp') or ''
+    if ts:
+        for fmt in ('%m/%d/%Y %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S'):
+            try:
+                dt = datetime.datetime.strptime(str(ts), fmt)
+                hour = dt.hour
+                is_weekend = 1 if dt.weekday() >= 5 else 0
+                break
+            except Exception:
+                pass
+    else:
+        now = datetime.datetime.now()
+        hour = now.hour
+        is_weekend = 1 if now.weekday() >= 5 else 0
+
+    clf_row = [voltage, current, power, freq, pf, apparent, reactive, hour, is_weekend]
+    reg_row = [voltage, current, freq, pf, apparent, reactive, hour, is_weekend]
+    return clf_row, reg_row
+
+
+def _run_both(raw: dict):
+    """Run classifier + regressor on a single raw reading. Returns result dict."""
+    t0 = time.time()
+    clf_row, reg_row = _build_features(raw)
+
+    X_clf = _CLF_SC.transform([clf_row])
+    pred_idx = int(_CLF.predict(X_clf)[0])
+    proba    = _CLF.predict_proba(X_clf)[0]
+    label      = LABEL_MAP[pred_idx]
+    confidence = float(proba[pred_idx])
+    top3 = sorted(
+        [{'label': LABEL_MAP[i], 'probability': round(float(p), 4)} for i, p in enumerate(proba)],
+        key=lambda x: x['probability'], reverse=True
+    )[:3]
+
+    X_reg = _REG_SC.transform([reg_row])
+    est_power = float(_REG.predict(X_reg)[0])
+
+    ms = round((time.time() - t0) * 1000, 2)
+    return {
+        'appliance':         label,
+        'confidence':        round(confidence * 100, 2),
+        'top_3':             top3,
+        'estimated_power_w': round(est_power, 2),
+        'inference_time_ms': ms,
+    }
+
+# ─── Health / Meta ────────────────────────────────────────────
 
 @app.route('/api/health', methods=['GET'])
 def health():
-    model_ready = os.path.exists(os.path.join(MODELS_DIR, 'xgb_model.pkl'))
-    return jsonify({'status': 'ok', 'model_trained': model_ready})
+    return jsonify({
+        'status': 'ok',
+        'model_trained': _MODELS_READY,
+        'uptime_s': round(time.time() - _APP_START, 1),
+        'version': '2.0.0',
+    })
+
+
+@app.route('/api/appliances', methods=['GET'])
+def list_appliances():
+    return jsonify({'status': 'success', 'appliances': LABEL_MAP, 'count': len(LABEL_MAP)})
 
 # ─── Train / Evaluate ─────────────────────────────────────────
 
@@ -110,48 +202,109 @@ def get_evaluation():
 
 # ─── Predict ──────────────────────────────────────────────────
 
+def _models_check():
+    if not _MODELS_READY:
+        return jsonify({'status': 'error', 'message': 'Models not loaded'}), 503
+    return None
+
+
 @app.route('/api/predict', methods=['POST'])
 def predict():
-    try:
-        le, scaler, feature_cols = _load_artifacts()
-        model = load_model()
-    except FileNotFoundError as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 404
+    err = _models_check()
+    if err: return err
 
     body = request.get_json(silent=True)
     if not body or 'features' not in body:
-        return jsonify({
-            'status': 'error',
-            'message': f'Provide a JSON body with "features" key containing values for: {feature_cols}'
-        }), 400
+        return jsonify({'status': 'error', 'message': f'Provide "features" dict with keys: {CLF_FEATURES}'}), 400
 
     try:
         raw = body['features']
         if isinstance(raw, dict):
-            values = [raw[f] for f in feature_cols]
+            clf_row, _ = _build_features(raw)
         elif isinstance(raw, list):
-            if len(raw) != len(feature_cols):
-                raise ValueError(f'Expected {len(feature_cols)} values, got {len(raw)}')
-            values = raw
+            if len(raw) != len(CLF_FEATURES):
+                raise ValueError(f'Expected {len(CLF_FEATURES)} values, got {len(raw)}')
+            clf_row = [float(v) for v in raw]
         else:
             raise ValueError('features must be a dict or list')
 
-        X = scaler.transform([values])
-        pred_idx = model.predict(X)[0]
-        proba = model.predict_proba(X)[0]
-
-        label = le.inverse_transform([pred_idx])[0]
-        confidence = float(proba[pred_idx])
-        all_probs = {cls: float(p) for cls, p in zip(le.classes_, proba)}
+        X = _CLF_SC.transform([clf_row])
+        pred_idx = int(_CLF.predict(X)[0])
+        proba = _CLF.predict_proba(X)[0]
+        label = LABEL_MAP[pred_idx]
 
         return jsonify({
             'status': 'success',
             'predicted_label': label,
-            'confidence': confidence,
-            'probabilities': all_probs,
+            'confidence': float(proba[pred_idx]),
+            'probabilities': {lbl: float(p) for lbl, p in zip(LABEL_MAP, proba)},
         })
     except (KeyError, ValueError) as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/predict/appliance', methods=['POST'])
+def predict_appliance():
+    """Clean endpoint: accepts raw PZEM fields, returns appliance + confidence + top3."""
+    err = _models_check()
+    if err: return err
+
+    body = request.get_json(silent=True) or {}
+    try:
+        result = _run_both(body)
+        return jsonify({
+            'status': 'success',
+            'appliance':         result['appliance'],
+            'confidence':        result['confidence'],
+            'top_3':             result['top_3'],
+            'timestamp':         body.get('timestamp') or datetime.datetime.now().isoformat(),
+            'inference_time_ms': result['inference_time_ms'],
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/predict/power', methods=['POST'])
+def predict_power():
+    """Estimate active power using the regressor."""
+    err = _models_check()
+    if err: return err
+
+    body = request.get_json(silent=True) or {}
+    try:
+        t0 = time.time()
+        _, reg_row = _build_features(body)
+        X = _REG_SC.transform([reg_row])
+        est = float(_REG.predict(X)[0])
+        return jsonify({
+            'status': 'success',
+            'estimated_power_w': round(est, 2),
+            'inference_time_ms': round((time.time() - t0) * 1000, 2),
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/predict/both', methods=['POST'])
+def predict_both():
+    """Single call: classifier + regressor. Main endpoint for the live dashboard."""
+    err = _models_check()
+    if err: return err
+
+    body = request.get_json(silent=True) or {}
+    try:
+        result = _run_both(body)
+        return jsonify({
+            'status':            'success',
+            'appliance':         result['appliance'],
+            'confidence':        result['confidence'],
+            'top_3':             result['top_3'],
+            'estimated_power_w': result['estimated_power_w'],
+            'timestamp':         body.get('timestamp') or datetime.datetime.now().isoformat(),
+            'inference_time_ms': result['inference_time_ms'],
+        })
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
@@ -159,47 +312,104 @@ def predict():
 
 @app.route('/api/predict/batch', methods=['POST'])
 def predict_batch():
-    try:
-        le, scaler, feature_cols = _load_artifacts()
-        model = load_model()
-    except FileNotFoundError as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 404
+    err = _models_check()
+    if err: return err
 
     body = request.get_json(silent=True)
-    if not body or 'rows' not in body or not isinstance(body['rows'], list):
-        return jsonify({'status': 'error', 'message': 'Provide a JSON body with "rows" as a list of feature dicts'}), 400
+    key = 'rows' if body and 'rows' in body else ('readings' if body and 'readings' in body else None)
+    if not key:
+        return jsonify({'status': 'error', 'message': 'Provide "rows" or "readings" list'}), 400
 
+    t0 = time.time()
     try:
         X = []
-        for row in body['rows']:
+        for row in body[key]:
             if isinstance(row, dict):
-                values = [row[f] for f in feature_cols]
+                clf_row, _ = _build_features(row)
             elif isinstance(row, list):
-                if len(row) != len(feature_cols):
-                    raise ValueError(f'Expected {len(feature_cols)} values, got {len(row)}')
-                values = row
+                if len(row) != len(CLF_FEATURES):
+                    raise ValueError(f'Expected {len(CLF_FEATURES)} values, got {len(row)}')
+                clf_row = [float(v) for v in row]
             else:
                 raise ValueError('Each row must be a dict or list')
-            X.append(values)
+            X.append(clf_row)
 
-        X_scaled = scaler.transform(X)
-        pred_idxs = model.predict(X_scaled)
-        probas = model.predict_proba(X_scaled)
+        X_scaled = _CLF_SC.transform(X)
+        pred_idxs = _CLF.predict(X_scaled)
+        probas    = _CLF.predict_proba(X_scaled)
 
         results = []
         for pred_idx, proba in zip(pred_idxs, probas):
-            label = le.inverse_transform([pred_idx])[0]
+            idx = int(pred_idx)
             results.append({
-                'predicted_label': label,
-                'confidence': float(proba[pred_idx]),
-                'probabilities': {cls: float(p) for cls, p in zip(le.classes_, proba)},
+                'predicted_label': LABEL_MAP[idx],
+                'appliance':       LABEL_MAP[idx],
+                'confidence':      round(float(proba[idx]) * 100, 2),
+                'probabilities':   {lbl: float(p) for lbl, p in zip(LABEL_MAP, proba)},
             })
 
-        return jsonify({'status': 'success', 'results': results})
+        return jsonify({
+            'status': 'success',
+            'results': results,
+            'predictions': results,
+            'total_inference_ms': round((time.time() - t0) * 1000, 2),
+        })
     except (KeyError, ValueError) as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/recommend', methods=['GET'])
+def recommend():
+    """
+    Budget recommendation endpoint.
+    Query params:
+      budget_watts  — int, default 600
+      loads         — comma-separated "Label:watts" pairs
+    """
+    try:
+        budget = float(request.args.get('budget_watts', 600))
+    except (ValueError, TypeError):
+        return jsonify({'status': 'error', 'message': 'budget_watts must be a number'}), 400
+
+    loads_param = request.args.get('loads', '')
+    active = []
+    if loads_param:
+        for part in loads_param.split(','):
+            part = part.strip()
+            if ':' in part:
+                name, w = part.rsplit(':', 1)
+                try:
+                    active.append({'appliance': name.strip(), 'power_w': float(w)})
+                except ValueError:
+                    pass
+
+    total_w = sum(a['power_w'] for a in active)
+    over_by = max(0.0, total_w - budget)
+
+    # Sort by power descending; recommend turning off heaviest first
+    sorted_loads = sorted(active, key=lambda x: x['power_w'], reverse=True)
+    recs = []
+    remaining = total_w
+    for load in sorted_loads:
+        if remaining <= budget:
+            break
+        action = 'TURN OFF' if load['power_w'] >= 200 else 'REDUCE'
+        recs.append({'appliance': load['appliance'], 'action': action, 'saves_w': load['power_w']})
+        remaining -= load['power_w']
+
+    savings_pct = round((1 - remaining / total_w) * 100, 1) if total_w > 0 else 0
+
+    return jsonify({
+        'status':           'success',
+        'total_current_w':  round(total_w, 2),
+        'budget_w':         budget,
+        'over_budget_by':   round(over_by, 2),
+        'recommendations':  recs,
+        'total_after_w':    round(remaining, 2),
+        'savings_pct':      savings_pct,
+    })
 
 # ─── Load Manager ─────────────────────────────────────────────
 

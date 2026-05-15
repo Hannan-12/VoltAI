@@ -65,7 +65,7 @@ export default function App() {
           <div className="sidebar-logo">⚡</div>
           {!collapsed && (
             <div className="sidebar-brand-text">
-              <span className="sidebar-brand-name">VoltaAI</span>
+              <span className="sidebar-brand-name">Smart Meter</span>
               <span className="sidebar-brand-sub">Energy Intelligence</span>
             </div>
           )}

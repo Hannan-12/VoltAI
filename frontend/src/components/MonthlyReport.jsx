@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import { SkeletonCard } from './Skeleton'
 
-const SHEET_ID = '1pwetSD96HxJCB3RoxqtnKHTT7NBEy6TDZfFu1wj9q_o'
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbSJRflh9OFloDKHNzHKO3LvdamJhjulEWgospOAYP2dOgD3JEX6dfQOrLkBf2Iehrl1kPAr0phvhr/pub?gid=0&single=true&output=csv'
 const READING_INTERVAL_S = 9
 
 const LABEL_ICONS = {
@@ -47,19 +47,12 @@ function fmtHours(h) {
   return `${hrs}h ${mins}m`
 }
 
-function sheetQueryUrl(year, month) {
-  // month is 1-based
-  const start = `${year}-${month}-1 0:0:0`
-  const endMonth = month === 12 ? 1 : month + 1
-  const endYear  = month === 12 ? year + 1 : year
-  const end = `${endYear}-${endMonth}-1 0:0:0`
-  const tq = `select A,H where A >= datetime '${start}' and A < datetime '${end}'`
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&tq=${encodeURIComponent(tq)}&_=${Date.now()}`
-}
-
 async function fetchMonthData(year, month) {
-  const res  = await fetch(sheetQueryUrl(year, month), { cache: 'no-store' })
-  const text = await res.text()
+  const start = new Date(year, month - 1, 1)
+  const end   = new Date(year, month, 1)
+  const url   = `${SHEET_URL}&_=${Date.now()}`
+  const res   = await fetch(url, { cache: 'no-store' })
+  const text  = await res.text()
   const lines = text.trim().split('\n').filter(Boolean)
   if (lines.length < 2) return { byLabel: {}, byDay: {} }
 
@@ -68,15 +61,13 @@ async function fetchMonthData(year, month) {
 
   for (let i = 1; i < lines.length; i++) {
     const cols  = lines[i].split(',').map(v => v.replace(/^"|"$/g, '').trim())
-    const time  = cols[0]
-    const label = cols[1]
-    if (!label || !time) continue
+    const ts    = new Date(cols[0])
+    const label = cols[7]  // column H (index 7)
+    if (!label || isNaN(ts)) continue
+    if (ts < start || ts >= end) continue
 
-    const day = time.split(' ')[0]  // e.g. "4/19/2026"
-    const d   = parseInt(day.split('/')[1], 10)  // day-of-month number
-
+    const d = ts.getDate()
     byLabel[label] = (byLabel[label] || 0) + 1
-
     if (!byDay[d]) byDay[d] = {}
     byDay[d][label] = (byDay[d][label] || 0) + 1
   }

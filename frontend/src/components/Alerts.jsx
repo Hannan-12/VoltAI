@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { SkeletonCard } from './Skeleton'
 import './Alerts.css'
 
-const SHEET_ID      = '1pwetSD96HxJCB3RoxqtnKHTT7NBEy6TDZfFu1wj9q_o'
+const SHEET_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbSJRflh9OFloDKHNzHKO3LvdamJhjulEWgospOAYP2dOgD3JEX6dfQOrLkBf2Iehrl1kPAr0phvhr/pub?gid=0&single=true&output=csv'
 const READING_S     = 9
 const REFRESH_MS    = 3 * 60 * 1000
 
@@ -14,21 +14,23 @@ const WATT_MAP = {
 }
 function estimateWatts(label) { return WATT_MAP[label] ?? 200 }
 
-function sheetUrl(tq) {
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&tq=${encodeURIComponent(tq)}&_=${Date.now()}`
-}
-
 // Fetch all rows for a given date range, return label→readings map
 async function fetchReadings(startDt, endDt) {
-  const tq  = `select A,H where A >= datetime '${startDt}' and A < datetime '${endDt}'`
-  const res  = await fetch(sheetUrl(tq), { cache: 'no-store' })
+  const url  = `${SHEET_URL}&_=${Date.now()}`
+  const res  = await fetch(url, { cache: 'no-store' })
   const text = await res.text()
   const lines = text.trim().split('\n').filter(Boolean)
+  const start = new Date(startDt)
+  const end   = new Date(endDt)
   const counts = {}
   for (let i = 1; i < lines.length; i++) {
     const cols  = lines[i].split(',').map(v => v.replace(/^"|"$/g, '').trim())
-    const label = cols[1]
-    if (label) counts[label] = (counts[label] || 0) + 1
+    const ts    = new Date(cols[0])
+    const label = cols[7]  // column H (index 7)
+    if (!label || isNaN(ts)) continue
+    if (ts >= start && ts < end) {
+      counts[label] = (counts[label] || 0) + 1
+    }
   }
   return counts
 }

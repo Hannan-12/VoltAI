@@ -10,7 +10,7 @@ import './LoadManager.css'
 
 // ─── Constants ────────────────────────────────────────────────
 
-const SHEET_ID = '1pwetSD96HxJCB3RoxqtnKHTT7NBEy6TDZfFu1wj9q_o'
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbSJRflh9OFloDKHNzHKO3LvdamJhjulEWgospOAYP2dOgD3JEX6dfQOrLkBf2Iehrl1kPAr0phvhr/pub?gid=0&single=true&output=csv'
 const READING_INTERVAL_S = 9
 
 const LABEL_ICONS = {
@@ -79,33 +79,25 @@ function fmtHours(h) {
   return `${hrs}h ${mins}m`
 }
 
-// Build gviz query URL for a specific date
-function sheetQueryUrl(date) {
-  const y = date.getFullYear()
-  const m = date.getMonth() + 1
-  const d = date.getDate()
-  const next = new Date(date)
-  next.setDate(next.getDate() + 1)
-  const ny = next.getFullYear()
-  const nm = next.getMonth() + 1
-  const nd = next.getDate()
-  const tq = `select A,H where A >= datetime '${y}-${m}-${d} 0:0:0' and A < datetime '${ny}-${nm}-${nd} 0:0:0'`
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&tq=${encodeURIComponent(tq)}&_=${Date.now()}`
-}
-
 // Fetch and aggregate one day's rows into per-label stats
 async function fetchDayStats(date) {
-  const res = await fetch(sheetQueryUrl(date), { cache: 'no-store' })
-  const text = await res.text()
+  const start = new Date(date); start.setHours(0,0,0,0)
+  const end   = new Date(date); end.setHours(23,59,59,999)
+  const url   = `${SHEET_URL}&_=${Date.now()}`
+  const res   = await fetch(url, { cache: 'no-store' })
+  const text  = await res.text()
   const lines = text.trim().split('\n').filter(Boolean)
   if (lines.length < 2) return []
 
   const counts = {}
   for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(',').map(v => v.replace(/^"|"$/g, '').trim())
-    const label = cols[1]
-    if (!label) continue
-    counts[label] = (counts[label] || 0) + 1
+    const cols  = lines[i].split(',').map(v => v.replace(/^"|"$/g, '').trim())
+    const ts    = new Date(cols[0])
+    const label = cols[7]  // column H (index 7)
+    if (!label || isNaN(ts)) continue
+    if (ts >= start && ts <= end) {
+      counts[label] = (counts[label] || 0) + 1
+    }
   }
 
   return Object.entries(counts).map(([label, readings]) => {

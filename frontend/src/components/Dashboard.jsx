@@ -8,7 +8,7 @@ import './Dashboard.css'
 
 // ─── Constants ────────────────────────────────────────────────
 
-const SHEET_ID    = '1pwetSD96HxJCB3RoxqtnKHTT7NBEy6TDZfFu1wj9q_o'
+const SHEET_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQbSJRflh9OFloDKHNzHKO3LvdamJhjulEWgospOAYP2dOgD3JEX6dfQOrLkBf2Iehrl1kPAr0phvhr/pub?gid=0&single=true&output=csv'
 const POLL_MS     = 5000     // poll sheet every 5 seconds
 const HISTORY_MAX = 60       // rolling window for sparkline
 
@@ -51,15 +51,14 @@ function confidenceBadgeStyle(conf) {
 }
 
 async function fetchLatestRow() {
-  // Fetch the single most-recent row via gviz — avoids downloading all rows
-  const tq  = `select A,B,C,D,E,F,G order by A desc limit 1`
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&tq=${encodeURIComponent(tq)}&_=${Date.now()}`
+  const url = `${SHEET_URL}&_=${Date.now()}`
   const res  = await fetch(url, { cache: 'no-store' })
   const text = await res.text()
   const lines = text.trim().split('\n').filter(Boolean)
   if (lines.length < 2) throw new Error('No data in sheet')
   const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim())
-  const vals    = lines[1].split(',').map(v => v.replace(/^"|"$/g, '').trim())
+  // last row = most recent reading
+  const vals = lines[lines.length - 1].split(',').map(v => v.replace(/^"|"$/g, '').trim())
   const row = {}
   headers.forEach((h, i) => { row[h] = vals[i] ?? '' })
   return row

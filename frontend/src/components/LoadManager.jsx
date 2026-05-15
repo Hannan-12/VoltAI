@@ -14,20 +14,25 @@ const SHEET_ID = '1pwetSD96HxJCB3RoxqtnKHTT7NBEy6TDZfFu1wj9q_o'
 const READING_INTERVAL_S = 9
 
 const LABEL_ICONS = {
+  Ceiling_Fan:         '🌀',
   Iron:                '🧲',
   LED_Bulbs:           '💡',
+  Microwave_Oven:      '🍳',
   Mixed_Load:          '🔌',
-  Mobile_Charger:      '📱',
+  Phone_Charger:       '📱',
   Refrigerator_ACTIVE: '❄️',
   Refrigerator_IDLE:   '🧊',
-  WashingMachine_SPIN: '🌀',
+  Standby_Load:        '😴',
+  Unknown_Load:        '❓',
+  WashingMachine_SPIN: '🌊',
   WashingMachine_WASH: '🫧',
   Water_Pump:          '💧',
 }
 
 const CHART_COLORS = [
-  '#f59e0b', '#f43f5e', '#22c55e', '#3b82f6',
-  '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#64748b',
+  '#f59e0b', '#f43f5e', '#22c55e', '#3b82f6', '#a855f7',
+  '#ec4899', '#14b8a6', '#f97316', '#64748b', '#06b6d4',
+  '#84cc16', '#e879f9', '#fb923c',
 ]
 
 const PRIORITY_OPTS = ['low', 'medium', 'high']
@@ -113,8 +118,9 @@ async function fetchDayStats(date) {
 // Rough watt estimate per label for kWh calculation
 function estimateWatts(label) {
   const map = {
-    Iron: 1288, LED_Bulbs: 30, Mixed_Load: 400, Mobile_Charger: 10,
-    Refrigerator_ACTIVE: 109, Refrigerator_IDLE: 15,
+    Ceiling_Fan: 75, Iron: 1288, LED_Bulbs: 30, Microwave_Oven: 1200,
+    Mixed_Load: 400, Phone_Charger: 10, Refrigerator_ACTIVE: 109,
+    Refrigerator_IDLE: 15, Standby_Load: 5, Unknown_Load: 200,
     WashingMachine_SPIN: 300, WashingMachine_WASH: 500, Water_Pump: 994,
   }
   return map[label] ?? 200

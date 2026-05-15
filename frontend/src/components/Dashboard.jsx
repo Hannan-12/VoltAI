@@ -7,25 +7,29 @@ import './Dashboard.css'
 const SHEET_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-6G97-09OKa0ogiNKnMQIKx6-caMw404tz1eAr95HV9yRzwT51_dA5toc7dF3shJdzporH5p2z6sf/pub?output=csv'
 
-const MEAN_PF = 0.676
 const REFRESH_MS = 3 * 60 * 1000  // 3 minutes
 const ROWS_TO_SHOW = 20
 
 const LABEL_ICONS = {
+  Ceiling_Fan:         '🌀',
   Iron:                '🧲',
   LED_Bulbs:           '💡',
+  Microwave_Oven:      '🍳',
   Mixed_Load:          '🔌',
-  Mobile_Charger:      '📱',
+  Phone_Charger:       '📱',
   Refrigerator_ACTIVE: '❄️',
   Refrigerator_IDLE:   '🧊',
-  WashingMachine_SPIN: '🌀',
+  Standby_Load:        '😴',
+  Unknown_Load:        '❓',
+  WashingMachine_SPIN: '🌊',
   WashingMachine_WASH: '🫧',
   Water_Pump:          '💧',
 }
 
 const CHART_COLORS = [
-  '#f59e0b', '#f43f5e', '#22c55e', '#3b82f6',
-  '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#64748b',
+  '#f59e0b', '#f43f5e', '#22c55e', '#3b82f6', '#a855f7',
+  '#ec4899', '#14b8a6', '#f97316', '#64748b', '#06b6d4',
+  '#84cc16', '#e879f9', '#fb923c',
 ]
 
 async function fetchLast20Rows() {
@@ -44,20 +48,16 @@ async function fetchLast20Rows() {
   })
 }
 
+// Backend now computes Apparent_Power, Reactive_Power, Hour, IsWeekend
+// so we just forward the raw sheet row as-is
 function buildFeatures(row) {
-  const voltage     = parseFloat(row['Voltage'])
-  const current     = parseFloat(row['Current'])
-  const power       = parseFloat(row['Power'])
-  const energy      = parseFloat(row['Energy'])
-  const frequency   = parseFloat(row['Frequency'])
-  const powerFactor = parseFloat(row['Power Factor'])
-  const apparent_power         = voltage * current
-  const reactive_power         = Math.sqrt(Math.max(apparent_power ** 2 - power ** 2, 0))
-  const power_factor_deviation = Math.abs(powerFactor - MEAN_PF)
   return {
-    Voltage: voltage, Current: current, Power: power,
-    Energy: energy, Frequency: frequency, 'Power Factor': powerFactor,
-    apparent_power, reactive_power, power_factor_deviation,
+    Voltage: parseFloat(row['Voltage']),
+    Current: parseFloat(row['Current']),
+    Power: parseFloat(row['Power']),
+    Frequency: parseFloat(row['Frequency']),
+    'Power Factor': parseFloat(row['Power Factor']),
+    Time: row['Time'] ?? '',
   }
 }
 
@@ -181,8 +181,8 @@ export default function Dashboard() {
             <div className="metric-grid">
               <MetricCard icon="🎯" value={metrics ? fmt(metrics.accuracy) : '—'} label="Accuracy"          sub="Test set"       highlight />
               <MetricCard icon="📊" value={metrics ? fmt(metrics.f1_score) : '—'} label="F1 Score"          sub="Weighted avg" />
-              <MetricCard icon="🏷️" value="9"                                      label="Appliance Classes"  sub="Trained labels" />
-              <MetricCard icon="🗃️" value="359K"                                   label="Training Samples"   sub="PZEM readings" />
+              <MetricCard icon="🏷️" value="13"                                     label="Appliance Classes"  sub="Trained labels" />
+              <MetricCard icon="🗃️" value="370K"                                   label="Training Samples"   sub="PZEM readings" />
               <MetricCard icon="🤖" value="XGBoost"                                label="Model"              sub="200 estimators" />
               <MetricCard icon="🔢" value="9"                                      label="Features"           sub="Auto-computed" />
             </div>

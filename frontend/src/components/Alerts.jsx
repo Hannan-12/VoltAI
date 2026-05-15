@@ -7,8 +7,9 @@ const READING_S     = 9
 const REFRESH_MS    = 3 * 60 * 1000
 
 const WATT_MAP = {
-  Iron: 1288, LED_Bulbs: 30, Mixed_Load: 400, Mobile_Charger: 10,
-  Refrigerator_ACTIVE: 109, Refrigerator_IDLE: 15,
+  Ceiling_Fan: 75, Iron: 1288, LED_Bulbs: 30, Microwave_Oven: 1200,
+  Mixed_Load: 400, Phone_Charger: 10, Refrigerator_ACTIVE: 109,
+  Refrigerator_IDLE: 15, Standby_Load: 5, Unknown_Load: 200,
   WashingMachine_SPIN: 300, WashingMachine_WASH: 500, Water_Pump: 994,
 }
 function estimateWatts(label) { return WATT_MAP[label] ?? 200 }

@@ -22,7 +22,7 @@ const LABEL_ICONS = {
   Refrigerator_ACTIVE: '❄️',
   Refrigerator_IDLE:   '🧊',
   Standby_Load:        '😴',
-  Unknown_Load:        '❓',
+  Unknown_Load:        '💡',
   WashingMachine_SPIN: '🌊',
   WashingMachine_WASH: '🫧',
   Water_Pump:          '💧',
@@ -35,6 +35,14 @@ const CHART_COLORS = [
 ]
 
 const PKR_PER_KWH = 30
+
+const LABEL_DISPLAY = {
+  Unknown_Load: 'Fan / Light',
+}
+
+function formatLabel(raw) {
+  return LABEL_DISPLAY[raw] ?? raw.replace(/_/g, ' ')
+}
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -90,7 +98,7 @@ function ApplianceCard({ result, sheetRow, sessionStart }) {
   const power = result.estimated_power_w
   const runMins = sessionStart ? Math.floor((Date.now() - sessionStart) / 60000) : 0
   const costRs = ((power / 1000) * (runMins / 60) * PKR_PER_KWH).toFixed(2)
-  const displayLabel = result.appliance.replace(/_/g, ' ')
+  const displayLabel = formatLabel(result.appliance)
 
   return (
     <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap', padding: '1.5rem 2rem' }}>
@@ -134,7 +142,7 @@ function Top3Table({ top3 }) {
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <span style={{ width: 20, color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{i + 1}</span>
           <span style={{ flex: 1, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-            {LABEL_ICONS[t.label] ?? '⚡'} {t.label.replace(/_/g, ' ')}
+            {LABEL_ICONS[t.label] ?? '⚡'} {formatLabel(t.label)}
           </span>
           <div style={{ width: 120, background: 'var(--surface-4)', borderRadius: 4, height: 6, overflow: 'hidden' }}>
             <div style={{ width: `${(t.probability * 100).toFixed(1)}%`, height: '100%', background: i === 0 ? '#f59e0b' : '#64748b', borderRadius: 4 }} />
@@ -172,7 +180,7 @@ function LabelPieChart({ history }) {
     if (h.appliance) counts[h.appliance] = (counts[h.appliance] || 0) + 1
   })
   const data = Object.entries(counts)
-    .map(([name, count]) => ({ name: name.replace(/_/g, ' '), count }))
+    .map(([name, count]) => ({ name: formatLabel(name), count }))
     .sort((a, b) => b.count - a.count)
 
   if (!data.length) return null
@@ -373,7 +381,7 @@ export default function Dashboard() {
               <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>MODEL OUTPUT</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                 <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
-                  {LABEL_ICONS[result.appliance]} {result.appliance.replace(/_/g, ' ')}
+                  {LABEL_ICONS[result.appliance]} {formatLabel(result.appliance)}
                 </span>
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: 2 }}>

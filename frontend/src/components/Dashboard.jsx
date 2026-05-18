@@ -90,23 +90,24 @@ function ApplianceCard({ result, sheetRow, sessionStart }) {
   const power = result.estimated_power_w
   const runMins = sessionStart ? Math.floor((Date.now() - sessionStart) / 60000) : 0
   const costRs = ((power / 1000) * (runMins / 60) * PKR_PER_KWH).toFixed(2)
+  const displayLabel = result.appliance.replace(/_/g, ' ')
 
   return (
     <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap', padding: '1.5rem 2rem' }}>
       <div style={{ fontSize: '3.5rem', lineHeight: 1 }}>
-        {isUncertain ? '⚠️' : (LABEL_ICONS[result.appliance] ?? '⚡')}
+        {LABEL_ICONS[result.appliance] ?? '⚡'}
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-secondary)', marginBottom: 4 }}>
           ACTIVE APPLIANCE
         </div>
         <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-          {isUncertain ? '⚠️ Uncertain Reading' : result.appliance.replace(/_/g, ' ')}
+          {displayLabel}
+          {isUncertain && (
+            <span style={{ fontSize: '1rem', fontWeight: 600, color: '#f59e0b', marginLeft: 10 }}>⚠️ Low confidence</span>
+          )}
         </div>
         <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ ...confidenceBadgeStyle(conf), borderRadius: 20, padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>
-            {conf.toFixed(1)}% confidence
-          </span>
           {runMins > 0 && (
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
               Running {runMins}m · Cost Rs. {costRs}
@@ -266,7 +267,7 @@ export default function Dashboard() {
             ⚡ Live Monitor
           </h1>
           <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            Real-time appliance detection from PZEM meter · polls every 5s
+            Real-time appliance detection from meter · polls every 5s
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -374,7 +375,6 @@ export default function Dashboard() {
                 <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
                   {LABEL_ICONS[result.appliance]} {result.appliance.replace(/_/g, ' ')}
                 </span>
-                <span style={{ color: '#f59e0b' }}>{result.confidence.toFixed(1)}%</span>
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: 2 }}>
                 Est. power: {result.estimated_power_w.toFixed(1)} W · {result.inference_time_ms} ms

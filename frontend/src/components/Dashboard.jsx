@@ -95,7 +95,7 @@ function ApplianceCard({ result, sheetRow, sessionStart }) {
   if (!result) return null
   const conf = result.confidence
   const isUncertain = conf < 60
-  const power = sheetRow?.Power ?? result.estimated_power_w
+  const power = parseFloat(sheetRow?.Power) || result.estimated_power_w || 0
   const runMins = sessionStart ? Math.floor((Date.now() - sessionStart) / 60000) : 0
   const costRs = ((power / 1000) * (runMins / 60) * PKR_PER_KWH).toFixed(2)
   const displayLabel = formatLabel(result.appliance)
@@ -385,7 +385,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: 2 }}>
-                Est. power: {result.estimated_power_w.toFixed(1)} W · {result.inference_time_ms} ms
+                Est. power: {parseFloat(result.estimated_power_w || 0).toFixed(1)} W · {result.inference_time_ms} ms
               </div>
             </div>
           )}

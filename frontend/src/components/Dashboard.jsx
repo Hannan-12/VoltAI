@@ -165,7 +165,9 @@ function SparkLine({ data, color }) {
         <XAxis dataKey="t" tick={{ fontSize: 9, fill: '#64748b' }} interval="preserveStartEnd" />
         <YAxis tick={{ fontSize: 9, fill: '#64748b' }} />
         <Tooltip
-          contentStyle={{ background: '#1a2235', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8, fontSize: '0.78rem' }}
+          contentStyle={{ background: '#1a2235', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8, fontSize: '0.78rem', color: '#f1f5f9' }}
+          itemStyle={{ color: '#f1f5f9' }}
+          labelStyle={{ color: '#94a3b8' }}
           formatter={(v) => [`${v.toFixed(1)} W`, 'Power']}
         />
         <Line type="monotone" dataKey="w" stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} />
@@ -191,7 +193,9 @@ function LabelPieChart({ history }) {
           {data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
         </Pie>
         <Tooltip
-          contentStyle={{ background: '#1a2235', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8, fontSize: '0.78rem' }}
+          contentStyle={{ background: '#1a2235', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8, fontSize: '0.78rem', color: '#f1f5f9' }}
+          itemStyle={{ color: '#f1f5f9' }}
+          labelStyle={{ color: '#f1f5f9' }}
         />
         <Legend formatter={v => <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{v}</span>} />
       </PieChart>

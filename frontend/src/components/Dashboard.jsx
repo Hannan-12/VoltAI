@@ -94,8 +94,8 @@ function GaugeStat({ label, value, unit, color }) {
 function ApplianceCard({ result, sheetRow, sessionStart }) {
   if (!result) return null
   const conf = result.confidence
-  const isUncertain = conf < 70
-  const power = result.estimated_power_w
+  const isUncertain = conf < 60
+  const power = sheetRow?.Power ?? result.estimated_power_w
   const runMins = sessionStart ? Math.floor((Date.now() - sessionStart) / 60000) : 0
   const costRs = ((power / 1000) * (runMins / 60) * PKR_PER_KWH).toFixed(2)
   const displayLabel = formatLabel(result.appliance)
